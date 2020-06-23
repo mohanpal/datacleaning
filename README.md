@@ -1,7 +1,7 @@
 # datacleaning
 This repository will contain code to clean data using python and R
 
-Data Source: https://archive.ics.uci.edu/ml/datasets/Credit+Approval
+Data Source for python: https://archive.ics.uci.edu/ml/datasets/Credit+Approval
 
 Variables : 
 A1:b, a.
