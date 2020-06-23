@@ -1,0 +1,129 @@
+
+## Read WHO Data
+
+```{r}
+WHO_DATA <- read.csv("C:/data/WHO.csv", stringsAsFactors = FALSE)
+```
+
+## Tidy Task 1:
+
+using tidyr function gather()
+
+```{r, echo=TRUE}
+
+task1 <- gather(WHO_DATA,'new_sp_m014':'new_rel_f65',key="code",value="value" )
+task1
+dim(task1)
+
+```
+
+## Tidy Task 2:
+
+```{r}
+
+task2 <- task1%>%separate(code,into=c("new","var","sex_age"),sep="_")
+task2.1 <- task2%>%separate(sex_age,into=c("sex","age"),sep=1)
+task2.1
+dim(task2.1)
+
+```
+
+## Tidy Task 3:
+
+```{r}
+
+task3 <- task2.1%>%spread(key="var",value="value")
+task3
+dim(task3)
+
+```
+
+## Tidy Task 4: 
+
+
+```{r}
+
+task4 <- task3%>%mutate(sex=factor(sex,levels=c("m","f")),age=factor(age,levels=c("014","1524","2534","3544","4554","5564","65"),labels  =c("<15","15-24","25-34","35-44","45-54","55-64", "65>="), ordered = T))
+task4
+dim(task4)
+
+```
+
+## Task 5: Filter & Select
+
+```{r}
+
+task5 <- task4 %>% select(., -c(iso2,new))
+WHO_subset <- task5 %>% filter(country == "Albania"|country =="Algeria"|country =="Canada")
+WHO_subset
+dim(WHO_subset)
+
+```
+
+## Read Species and Surveys data sets
+
+```{r}
+
+species <- read.csv("C:/data/species.csv", stringsAsFactors = FALSE)
+surveys <- read.csv("C:/data/surveys.csv", stringsAsFactors = FALSE)
+
+```
+
+## Task 6: Join  
+
+In this task,left_join is used to avoid loss of data as inner_join will remove Specied_id(56 observations) with NA. This will result in data loss from other columns as well.
+
+```{r}
+
+surveys_combined <- left_join(surveys,species,by="species_id")
+surveys_combined
+dim(surveys_combined)
+
+```
+
+## Task 7: Calculate 
+calculating the average weight and hindfoot length by choosing one of the species observed in each month
+
+```{r}
+
+task7 <- surveys_combined %>% filter(.,species_id == "PF")
+
+task7 %>% group_by(month) %>% summarise(avgweight = mean(weight, na.rm=TRUE),avghindfoot = mean(hindfoot_length, na.rm=TRUE))
+
+
+```
+
+## Task 8: Missing Values
+
+```{r}
+
+surveys_combined_year <- surveys_combined %>% filter(., year == "1978")
+surveys_combined_year %>% group_by(.,species) %>% summarise (total_na = sum(is.na(weight)))
+surveys_weight_imputed<- surveys_combined_year %>% group_by(species) %>% mutate(weight =weight%>% impute(fun=mean))
+
+surveys_weight_imputed %>% group_by(.,species) %>% summarise (total_na = sum(is.na(weight)))
+
+surveys_weight_imputed %>% summarise (totalinf = sum(is.infinite(weight)))
+surveys_weight_imputed %>% summarise (totalNaN = sum(is.nan(weight)))
+
+#Checking outliers using tukey's method
+boxplot(surveys_combined$hindfoot_length,main="Box Plot of Hindfoot length", ylab="hindfoot length", col = "grey")
+dim(surveys_combined)
+#Getting actual values of outliers
+boxplot(surveys_combined$hindfoot_length)$out
+
+#assign the outliers into vector
+outliers_Vector <- boxplot(surveys_combined$hindfoot_length)$out
+print(outliers_Vector)
+
+# finding the rows in which outliers are present
+surveys_combined[which(surveys_combined$hindfoot_length %in% outliers_Vector),]
+
+# Removing outliers 
+surveys_combined <- surveys_combined[-which(surveys_combined$hindfoot_length %in% outliers_Vector),]
+
+#checking results
+boxplot(surveys_combined$hindfoot_length,main="Box Plot of Hindfoot length", ylab="hindfoot length", col="red")
+dim(surveys_combined)
+
+
